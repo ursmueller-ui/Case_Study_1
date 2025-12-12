@@ -42,9 +42,10 @@ def find_device_by_name(device_name):
 
 if 'device_db' not in st.session_state:
     st.session_state.device_db = {
-        "Laser Cutter X": Device("Laser Cutter X", "Meier (2345)", 1),
-        "3D-Drucker A": Device("3D-Drucker A", "Schmidt (1122)", 2),
-        "CNC-Fräse Z": Device("CNC-Fräse Z", "Müller (5678)", 3)
+        "Laser Cutter X": Device("Laser Cutter X", "LeoMaus", 1),
+        "3D-Drucker A": Device("3D-Drucker A", "Vollteil_Jan", 2),
+        "CNC-Fräse Z": Device("CNC-Fräse Z", "Drehpeter", 3),
+        "Schweißgerät": Device("Schweißgerät", "Funken_Kevin", 4)
     }
 
 # Setze das Default-Gerät für die erste Auswahl
