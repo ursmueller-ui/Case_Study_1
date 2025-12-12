@@ -45,7 +45,12 @@ if 'device_db' not in st.session_state:
         "Laser Cutter X": Device("Laser Cutter X", "LeoMaus", 1),
         "3D-Drucker A": Device("3D-Drucker A", "Vollteil_Jan", 2),
         "CNC-Fräse Z": Device("CNC-Fräse Z", "Drehpeter", 3),
-        "Schweißgerät": Device("Schweißgerät", "Funken_Kevin", 4)
+        "Schweißgerät": Device("Schweißgerät", "Funken_Kevin", 4),
+        "Laser Cutter X": Device("Laser Cutter X", "Meier (2345)", 5),
+        "3D-Drucker A": Device("3D-Drucker A", "Schmidt (1122)", 6),
+        "CNC-Fräse Z": Device("CNC-Fräse Z", "Müller (5678)", 7),
+        "Bohrmaschine B": Device("Bohrmaschine B", "Friedrich Merz", 8),
+        "Bandsäge Y": Device("Bandsäge Y", "Danny Run", 9)
     }
 
 # Setze das Default-Gerät für die erste Auswahl
@@ -54,7 +59,7 @@ if 'current_device_name' not in st.session_state:
 
 # --- 4. Streamlit UI Aufbau ---
 
-st.title("⚙️ Geräteverwaltung (Mockup mit simuliertem CRUD)")
+st.title("⚙️ Geräteverwaltung Müller GmbH")
 st.markdown("---")
 
 devices_in_db = find_devices()
