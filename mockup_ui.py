@@ -46,11 +46,9 @@ if 'device_db' not in st.session_state:
         "3D-Drucker A": Device("3D-Drucker A", "Vollteil_Jan", 2),
         "CNC-Fräse Z": Device("CNC-Fräse Z", "Drehpeter", 3),
         "Schweißgerät": Device("Schweißgerät", "Funken_Kevin", 4),
-        "Laser Cutter X": Device("Laser Cutter X", "Meier (2345)", 5),
-        "3D-Drucker A": Device("3D-Drucker A", "Schmidt (1122)", 6),
-        "CNC-Fräse Z": Device("CNC-Fräse Z", "Müller (5678)", 7),
-        "Bohrmaschine B": Device("Bohrmaschine B", "Friedrich Merz", 8),
-        "Bandsäge Y": Device("Bandsäge Y", "Danny Run", 9)
+        "Lötstation": Device("Lötstation", "Heiß_Lutz", 5),
+        "Bohrmaschine B": Device("Bohrmaschine B", "Friedrich Merz", 6),
+        "Bandsäge Y": Device("Bandsäge Y", "Danny Run", 7)
     }
 
 # Setze das Default-Gerät für die erste Auswahl
