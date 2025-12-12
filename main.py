@@ -4,7 +4,7 @@ if "sb_current_device" not in st.session_state:
     st.session_state.sb_current_device = ""
 
 # Eine Überschrift der ersten Ebene
-st.write("# Gerätemanadjkfsjdlkfjgement")
+st.write("# Gerätemanagement")
 
 # Eine Überschrift der zweiten Ebene
 st.write("## Geräteauswahl")
