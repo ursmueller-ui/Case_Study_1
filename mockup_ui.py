@@ -14,7 +14,8 @@ class Device:
         self.device_id = device_id
 
     def __str__(self):
-        return f"Gerät(ID: {self.device_id}, Name: {self.device_name}, Verantwortlicher: {self._managed_by_user_id})"
+        # Zeigt nur die Basis-Infos, nicht den Verantwortlichen im __str__
+        return f"Gerät(ID: {self.device_id}, Name: {self.device_name})"
 
     # Getter
     @property
@@ -57,14 +58,14 @@ if 'current_device_name' not in st.session_state:
     st.session_state.current_device_name = find_devices()[0] if find_devices() else None
 
 if 'logged_in' not in st.session_state:
-    st.session_state.logged_in = False # Initialer Status: Nicht angemeldet
+    st.session_state.logged_in = False 
 
 
-# --- 4. Login-Funktion ---
+# --- 4. Login-Funktion (Seitenleiste) ---
 
 def show_login_sidebar():
-    """Zeigt die Passwortabfrage in der Seitenleiste."""
-    st.sidebar.header("Admin-Login 🔑")
+    """Zeigt die Passwortabfrage/Logout in der Seitenleiste."""
+    st.sidebar.header("Admin-Zugang 🔑")
     
     if st.session_state.logged_in:
         st.sidebar.success("Angemeldet als Administrator.")
@@ -73,7 +74,7 @@ def show_login_sidebar():
             st.rerun()
     else:
         with st.sidebar.form("Login_Form"):
-            password = st.text_input("Passwort", type="password")
+            password = st.text_input("Passwort zur Bearbeitung", type="password")
             submitted = st.form_submit_button("Login")
 
             if submitted:
@@ -90,7 +91,7 @@ def show_login_sidebar():
 st.title("⚙️ Geräteverwaltung Müller GmbH")
 st.markdown("---")
 
-# Zeige die Seitenleiste und handle den Login-Status
+# Führt die Logik und die Anzeige für den Login aus
 show_login_sidebar()
 
 devices_in_db = find_devices()
@@ -108,20 +109,28 @@ if devices_in_db:
     loaded_device = find_device_by_name(current_device_name)
 
     if loaded_device:
-        # Basis-Informationen anzeigen (immer sichtbar)
-        st.info(f"Basisdaten: {loaded_device}") 
+        st.header(f"Details für {loaded_device.device_name}")
         st.markdown("---")
+
+        # --- ANZEIGE DES VERANTWORTLICHEN (IMMER SICHTBAR) ---
+        st.metric("Geräte-Verantwortlicher", loaded_device.managed_by_user_id)
+        
+        st.markdown("---")
+
 
         # 3. Formular zur Bearbeitung - NUR SICHTBAR NACH ERFOLGREICHEM LOGIN
         if st.session_state.logged_in:
             
-            with st.form("Device_Form"):
+            with st.form("Device_Edit_Form"):
                 
-                st.subheader(f"Gerät bearbeiten (Admin): {loaded_device.device_name}")
+                st.subheader(f"Geräte-Verantwortlichen ändern")
+                st.warning("Achtung: Sie bearbeiten die Daten als Administrator.")
 
+                # Text-Input mit dem aktuellen Wert zum ÄNDERN
                 text_input_val = st.text_input(
-                    "Geräte-Verantwortlicher", 
-                    value=loaded_device.managed_by_user_id
+                    "Neuer Verantwortlicher", 
+                    value=loaded_device.managed_by_user_id, # Aktueller Wert zur Initialisierung
+                    key="input_manager_id"
                 )
                 
                 submitted = st.form_submit_button("Änderungen speichern")
@@ -137,7 +146,7 @@ if devices_in_db:
                     st.rerun()
         else:
             # Hinweis, wenn man nicht eingeloggt ist
-            st.warning("Sie sind nicht angemeldet. Bitte loggen Sie sich in der Seitenleiste ein, um den Verantwortlichen zu ändern.")
+            st.info("Melden Sie sich über die Seitenleiste an, um den Verantwortlichen zu bearbeiten.")
 
     else:
         st.error("Gerät nicht in der Datenbank gefunden.")
