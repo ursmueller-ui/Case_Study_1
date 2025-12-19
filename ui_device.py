@@ -3,7 +3,7 @@ from queries import find_devices
 from devices import Device
 
 # Eine Überschrift der ersten Ebene
-st.write("# Gerätemanagement")
+st.write("# Gerätemanagement Müller/Vogel")
 
 # Eine Überschrift der zweiten Ebene
 st.write("## Geräteauswahl")
