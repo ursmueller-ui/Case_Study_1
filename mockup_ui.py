@@ -17,7 +17,7 @@ with st.form("add_device_form"):
         if not new_device_name or not new_device_manager:
             st.error("Bitte alle Felder ausfüllen.")
         else:
-            # Prüfen, ob Gerät bereits existiert
+            # Prüfen ob Gerät bereits existiert
             existing = Device.find_by_attribute("device_name", new_device_name)
             if existing:
                 st.error("Dieses Gerät existiert bereits.")
@@ -55,9 +55,7 @@ if not loaded_device:
 
 st.write(f"**Aktuelles Gerät:** {loaded_device.device_name}")
 
-# -------------------------
-# ✏️ Gerät bearbeiten
-# -------------------------
+#Geräte ändern
 with st.form("edit_device_form"):
     text_input_val = st.text_input(
         "Geräte-Verantwortlicher",
