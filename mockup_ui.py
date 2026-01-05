@@ -39,7 +39,7 @@ with tab_overview:
 with tab_edit:
     col1, col2 = st.columns(2)
     
-   
+    
     with col1:
         st.subheader("Neues Gerät anlegen")
         with st.container(): 
