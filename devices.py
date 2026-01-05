@@ -14,6 +14,7 @@ class Device():
         # The user id of the user that manages the device
         # We don't store the user object itself, but only the id (as a key)
         self.managed_by_user_id = managed_by_user_id
+        self.reservation_queue = []
         self.is_active = True
         
     # String representation of the class
