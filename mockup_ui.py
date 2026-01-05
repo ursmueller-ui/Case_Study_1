@@ -41,6 +41,7 @@ if not devices_in_db:
     st.info("Noch keine Geräte vorhanden.")
     st.stop()
 
+# Gerät mit einer Selectbox auswählen
 current_device_name = st.selectbox(
     "Gerät auswählen",
     options=devices_in_db,
@@ -70,6 +71,14 @@ with st.form("edit_device_form"):
         st.success("Änderungen gespeichert.")
         st.rerun()
 
+confirm_delete = st.checkbox(
+    "Ich bestätige, dass dieses Gerät dauerhaft gelöscht werden soll."
+)
+
+if st.button("🗑️ Gerät löschen", disabled=not confirm_delete):
+    loaded_device.delete()  # ← deine Delete-Methode
+    st.success("Gerät wurde gelöscht.")
+    st.rerun()
 
 #with st.expander("Session State"):
     #st.write(st.session_state)
