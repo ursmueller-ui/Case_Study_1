@@ -178,6 +178,7 @@ with tab_reserve:
                         device_obj.store_data()
                         st.success(f"{reserver_name} wurde vorgemerkt.")
                         st.rerun()
+# GEHT NOCH NICHT ZUM SPEICHERN UND ABRUFEN DER WARTESCHLANGE
                 
                 st.divider()
                 if st.button("Nächsten Benutzer abfertigen (Löschen)"):
