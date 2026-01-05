@@ -12,7 +12,6 @@ tab_overview, tab_edit = st.tabs(["Übersicht", "Verwaltung"])
 # Fenster 1
 with tab_overview:
     st.header("Aktuelle Geräteliste")
-    #st.rerun()
     all_devices = Device.find_all()
     
     if not all_devices:
@@ -31,7 +30,7 @@ with tab_overview:
 
         st.dataframe(
             df, 
-            use_container_width=True, 
+            width="stretch", 
             hide_index=True
         )
 
@@ -39,13 +38,19 @@ with tab_overview:
 with tab_edit:
     col1, col2 = st.columns(2)
     
-    
+    # col1: Neues Gerät anlegen
     with col1:
         st.subheader("Neues Gerät anlegen")
-        with st.container(): 
+        with st.container(border=True): 
             with st.form("add_device_form"):
-                new_device_name = st.text_input("Gerätename")
-                new_device_manager = st.text_input("Geräte-Verantwortlicher (E-Mail)")
+                new_device_name = st.text_input(
+                    "Gerätename", 
+                    placeholder="z.B. iPhone 15 Pro Max 3000"
+                )
+                new_device_manager = st.text_input(
+                    "Geräte-Verantwortlicher (E-Mail)", 
+                    placeholder="Max.Mustermann@maexchen.com"
+                )
 
                 add_submitted = st.form_submit_button("Gerät hinzufügen", type="primary")
 
@@ -62,13 +67,12 @@ with tab_edit:
                             st.success(f"Gerät '{new_device_name}' wurde angelegt.")
                             st.rerun()
 
-    #col 2 Geräte bearbeiten
+    # col2: Bestehendes Gerät bearbeiten/löschen
     with col2:
         st.subheader("Gerät bearbeiten")
-        with st.container(): 
+        with st.container(border=True): 
             
             devices_in_db = find_devices()
-            
             if not devices_in_db:
                 st.info("Keine Geräte zum Bearbeiten vorhanden.")
             else:
@@ -82,7 +86,8 @@ with tab_edit:
                 
                 if loaded_device:
                     st.caption(f"Bearbeite: {loaded_device.device_name}")
-                    
+
+                    # Geräte bearbeiten
                     with st.form("edit_device_form"):
                         text_input_val = st.text_input(
                             "Verantwortlichen ändern",
@@ -96,3 +101,35 @@ with tab_edit:
                             loaded_device.store_data()
                             st.success("Änderungen gespeichert.")
                             st.rerun()
+                    
+                    # Gerät löschen
+                    st.divider()
+                    st.write("**Geräte Entfernen**")
+                    
+                    confirm_key = f"confirm_delete_{loaded_device.device_name}"
+                    
+                    # Button löschen
+                    if st.button("Gerät löschen", type="secondary", key=f"btn_del_{loaded_device.device_name}"):
+                        st.session_state[confirm_key] = True
+                        st.rerun()
+
+                    # Wenn Löschen -> Bestätigung
+                    if st.session_state.get(confirm_key):
+                        st.warning(f"Möchten Sie '{loaded_device.device_name}' wirklich endgültig löschen?")
+                        
+                        # wirklich löschen
+                        col_conf1, col_conf2 = st.columns(2)
+                        with col_conf1:
+                            if st.button("Ja, löschen", type="primary", key="yes_del"):
+                                # Gerät entgültig löschen
+                                loaded_device.delete()
+                                st.success("Gerät wurde gelöscht.")
+                                # State wieder entfernen
+                                del st.session_state[confirm_key]
+                                st.rerun()
+
+                        # Dochnicht löschen       
+                        with col_conf2:
+                            if st.button("Abbrechen", key="no_del"):
+                                del st.session_state[confirm_key]
+                                st.rerun()
