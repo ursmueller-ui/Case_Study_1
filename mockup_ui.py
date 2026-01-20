@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
-from queries import find_devices
-from devices import Device
+from devices_inheritance import Device
 
 st.set_page_config(page_title="Gerätemanagement", layout="wide")
 
@@ -19,9 +18,9 @@ with tab_overview:
     else:
         data = [
             {
-                "Gerätename": device.device_name, 
+                "Gerätename": device.id, 
                 "Verantwortlicher": device.managed_by_user_id,
-                "Status": "Aktiv" if device.is_active else "Inaktiv"
+                #"Status": "Aktiv" if device.is_active else "Inaktiv"
             }
             for device in all_devices
         ]
@@ -72,7 +71,7 @@ with tab_edit:
         st.subheader("Gerät bearbeiten")
         with st.container(border=True): 
             
-            devices_in_db = find_devices()
+            devices_in_db = [device.id for device in Device.find_all()]
             if not devices_in_db:
                 st.info("Keine Geräte zum Bearbeiten vorhanden.")
             else:
@@ -82,10 +81,10 @@ with tab_edit:
                     key="sbDevice"
                 )
 
-                loaded_device = Device.find_by_attribute("device_name", current_device_name)
+                loaded_device = Device.find_by_attribute("id", current_device_name)
                 
                 if loaded_device:
-                    st.caption(f"Bearbeite: {loaded_device.device_name}")
+                    st.caption(f"Bearbeite: {loaded_device.id}")
 
                     # Geräte bearbeiten
                     with st.form("edit_device_form"):
@@ -106,16 +105,16 @@ with tab_edit:
                     st.divider()
                     st.write("**Geräte Entfernen**")
                     
-                    confirm_key = f"confirm_delete_{loaded_device.device_name}"
+                    confirm_key = f"confirm_delete_{loaded_device.id}"
                     
                     # Button löschen
-                    if st.button("Gerät löschen", type="secondary", key=f"btn_del_{loaded_device.device_name}"):
+                    if st.button("Gerät löschen", type="secondary", key=f"btn_del_{loaded_device.id}"):
                         st.session_state[confirm_key] = True
                         st.rerun()
 
                     # Wenn Löschen -> Bestätigung
                     if st.session_state.get(confirm_key):
-                        st.warning(f"Möchten Sie '{loaded_device.device_name}' wirklich endgültig löschen?")
+                        st.warning(f"Möchten Sie '{loaded_device.id}' wirklich endgültig löschen?")
                         
                         # wirklich löschen
                         col_conf1, col_conf2 = st.columns(2)
