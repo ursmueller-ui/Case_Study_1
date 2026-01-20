@@ -6,7 +6,7 @@ st.set_page_config(page_title="Gerätemanagement", layout="wide")
 
 st.write("# Gerätemanagement Müller/Vogel")
 
-tab_overview, tab_edit = st.tabs(["Übersicht", "Verwaltung"])
+tab_overview, tab_edit, tab_user, tab_reserve, tab_maintenance = st.tabs(["Übersicht", "Geräte-Verwaltung","Nutzer-Verwaltung", "Reservierungssystem", "Wartungssystem"])
 
 # Fenster 1
 with tab_overview:
@@ -132,3 +132,78 @@ with tab_edit:
                             if st.button("Abbrechen", key="no_del"):
                                 del st.session_state[confirm_key]
                                 st.rerun()
+
+# Fenster 3: Nutzer-Verwaltung
+with tab_user:
+    st.header("Nutzer-Verwaltung")
+    st.info("Diese Funktionalität wird in zukünftigen Versionen implementiert.")
+
+# Fenster 4: Gerät reservieren und Warteschlange
+with tab_reserve:
+    st.header("Gerät reservieren & Warteschlange")
+    
+    devices_in_db = find_devices()
+    
+    if not devices_in_db:
+        st.info("Keine Geräte vorhanden.")
+    else:
+        col_res1, col_res2 = st.columns([1, 2])
+        
+        # col1 Reservierungen eintragen
+        with col_res1:
+            with st.container(border=True):
+                st.subheader("Bedarf anmelden")
+                
+                selected_dev_name = st.selectbox(
+                    "Für welches Gerät?", 
+                    options=devices_in_db,
+                    key="sb_reserve"
+                )
+                
+                device_obj = Device.find_by_attribute("device_name", selected_dev_name)
+                
+                if not hasattr(device_obj, 'reservation_queue'):
+                    device_obj.reservation_queue = []
+
+                reserver_name = st.text_input("Ihr Name und Zeitdauer der Nutzung",
+                                              key="input_res_name",
+                                              placeholder="Max Mustermann 2 Tage")
+                
+                if st.button("In Warteschlange eintragen", type="primary"):
+                    if not reserver_name:
+                        st.error("Bitte einen Namen eingeben.")
+                    else:
+                        device_obj.reservation_queue.append(reserver_name)
+                        device_obj.store_data()
+                        st.success(f"{reserver_name} wurde vorgemerkt.")
+                        st.rerun()
+# GEHT NOCH NICHT ZUM SPEICHERN UND ABRUFEN DER WARTESCHLANGE
+                
+                st.divider()
+                if st.button("Nächsten Benutzer abfertigen (Löschen)"):
+                    if len(device_obj.reservation_queue) > 0:
+                        removed_user = device_obj.reservation_queue.pop(0)
+                        device_obj.store_data()
+                        st.success(f"{removed_user} wurde aus der Liste entfernt.")
+                        st.rerun()
+                    else:
+                        st.warning("Die Warteschlange ist leer.")
+
+        # col2: Warteschlange anzeigen
+        with col_res2:
+            st.subheader(f"Warteschlange für: {selected_dev_name}")
+            
+            queue = device_obj.reservation_queue
+            
+            if not queue:
+                st.info("Aktuell keine Reservierungen.")
+            else:
+                # Schöne Darstellung als nummerierte Liste
+                st.write("Folgende Personen warten (Reihenfolge):")
+                for i, person in enumerate(queue, 1):
+                    st.markdown(f"**{i}. {person}**")
+
+# Fenster 5: Wartungssystem
+with tab_maintenance:
+    st.header("Wartungssystem")
+    st.info("Diese Funktionalität wird in zukünftigen Versionen implementiert.")
