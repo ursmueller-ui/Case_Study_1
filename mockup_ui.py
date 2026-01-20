@@ -142,7 +142,7 @@ with tab_user:
 with tab_reserve:
     st.header("Gerät reservieren & Warteschlange")
     
-    devices_in_db = find_devices()
+    devices_in_db = [device.id for device in Device.find_all()]
     
     if not devices_in_db:
         st.info("Keine Geräte vorhanden.")
