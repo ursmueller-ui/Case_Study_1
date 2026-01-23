@@ -138,31 +138,97 @@ with tab_edit:
 # Fenster 3: Nutzer-Verwaltung
 with tab_user:
     st.header("Nutzer-Verwaltung")
-    st.info("Diese Funktionalität wird in zukünftigen Versionen implementiert.")
-    with st.form("add_user_form"):
-        new_user = st.text_input(
-            "Nutzername", 
-                    placeholder="z.B. Max Mustermann"
-                )
-        new_id_adress = st.text_input(
-            "Nutzer-Email", 
-                    placeholder="z.B. max.mustermann@mci.edu"
+    
+    # Layout wie bei Geräteverwaltung: 2 Spalten
+    col1, col2 = st.columns(2)
+
+    # ---------------------------------------------------------
+    # SPALTE 1: Neuen Nutzer anlegen
+    # ---------------------------------------------------------
+    with col1:
+        st.subheader("Neuen Nutzer anlegen")
+        with st.container(border=True):
+            # HIER IST DIE ÄNDERUNG: clear_on_submit=True
+            with st.form("add_user_form", clear_on_submit=True):
+                new_user_name = st.text_input("Nutzername", placeholder="z.B. Max Mustermann")
+                new_user_email = st.text_input("Nutzer-Email", placeholder="z.B. max.mustermann@mci.edu")
+
+                add_submitted = st.form_submit_button("Nutzer hinzufügen", type="primary")
+
+                if add_submitted:
+                    if not new_user_name or not new_user_email:
+                        st.error("Bitte alle Felder ausfüllen.")
+                    else:
+                        # Prüfen, ob ID (Email) schon existiert
+                        existing = User.find_by_attribute("id", new_user_email)
+                        if existing:
+                            st.error("Ein Nutzer mit dieser E-Mail existiert bereits.")
+                        else:
+                            new_user_obj = User(new_user_email, new_user_name)
+                            new_user_obj.store_data()
+                            st.success(f"Nutzer '{new_user_name}' wurde angelegt.")
+                            # st.rerun() ist hier optional, da clear_on_submit das Formular eh leert,
+                            # aber st.rerun() aktualisiert sofort die Listen in der rechten Spalte.
+                            st.rerun()
+
+    # ---------------------------------------------------------
+    # SPALTE 2: Nutzer verwalten & Löschen
+    # ---------------------------------------------------------
+    with col2:
+        st.subheader("Nutzer verwalten")
+        
+        all_users = User.find_all()
+        
+        with st.container(border=True):
+            if not all_users:
+                st.info("Keine Nutzer vorhanden.")
+            else:
+                # Auswahlbox für den Nutzer
+                selected_user_id = st.selectbox(
+                    "Nutzer auswählen",
+                    options=[u.id for u in all_users],
+                    format_func=lambda x: next((f"{u.name} ({u.id})" for u in all_users if u.id == x), x),
+                    key="sb_user_manage"
                 )
 
-        add_submitted = st.form_submit_button("Nutzer hinzufügen", type="primary")
+                # --- NEU: Verantwortlichkeiten anzeigen ---
+                # Wir suchen alle Geräte, bei denen dieser Nutzer eingetragen ist
+                all_devices = Device.find_all()
+                managed_devices = [d.id for d in all_devices if d.managed_by_user_id == selected_user_id]
+                
+                if managed_devices:
+                    st.warning(f"Dieser Nutzer ist verantwortlich für: {', '.join(managed_devices)}")
 
-        if add_submitted:
-            if not new_user or not new_id_adress:
-                st.error("Bitte alle Felder ausfüllen.")
-            else:
-                existing = User.find_by_attribute("name", new_user)
-            if existing:
-                st.error("Dieser Nutzer existiert bereits.")
-            else:
-                new_user_obj = User(new_id_adress, new_user)
-                new_user_obj.store_data()
-                st.success(f"Nutzer '{new_user}' wurde angelegt.")
-                st.rerun()
+
+                st.divider()
+
+                # Lösch-Logik
+                st.write("**Nutzer Entfernen**")
+                
+                # Button deaktivieren oder Warnung anzeigen ist Geschmackssache. 
+                # Hier lassen wir ihn klickbar, fangen aber den Fehler ab (sicherer).
+                if st.button("Nutzer löschen", type="secondary", key="btn_del_user"):
+                    if managed_devices:
+                        st.error(f"Löschen nicht möglich: Der Nutzer verwaltet noch {len(managed_devices)} Gerät(e). Bitte weise diese erst wem anders zu.")
+                    else:
+                        # Löschen durchführen
+                        user_to_delete = User.find_by_attribute("id", selected_user_id)
+                        if user_to_delete:
+                            user_to_delete.delete()
+                            st.success(f"Nutzer {selected_user_id} wurde gelöscht.")
+                            st.rerun()
+
+    st.divider()
+    with st.container(border=True):
+        st.subheader("Alle Nutzer in der Datenbank")
+        if all_users:
+            user_data = [{"Name": u.name, "Email (ID)": u.id} for u in all_users]
+            st.dataframe(pd.DataFrame(user_data), use_container_width=True, hide_index=True)
+        else:
+            st.write("Keine Daten.")
+
+
+
 # Fenster 4: Gerät reservieren und Warteschlange
 with tab_reserve:
     st.header("Gerät reservieren & Warteschlange")
