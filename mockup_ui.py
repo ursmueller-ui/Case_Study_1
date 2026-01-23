@@ -2,6 +2,12 @@ import streamlit as st
 import pandas as pd
 from devices_inheritance import Device
 from users_inheritance import User
+from maintenance import Maintenance
+import streamlit as st
+import pandas as pd
+from datetime import datetime, time
+from reservation_service import ReservationService
+from reservations import Reservation
 
 st.set_page_config(page_title="Gerätemanagement", layout="wide")
 
@@ -210,9 +216,6 @@ with tab_user:
             st.write("Keine Daten.")
 
 
-from datetime import datetime, time
-from reservation_service import ReservationService
-from reservations import Reservation
 
 # Fenster 4: Reservierungssystem
 with tab_reserve:
@@ -326,7 +329,87 @@ with tab_reserve:
                         st.error("Fehler: Reservierung nicht gefunden.")
 
 
+
 # Fenster 5: Wartungssystem
 with tab_maintenance:
-    st.header("Wartungssystem")
-    st.info("Diese Funktionalität wird in zukünftigen Versionen implementiert.")
+    st.header("Wartungs-Management")
+
+    with st.container(border=True):
+        st.subheader("Neuen Wartungseintrag anlegen")
+        with st.form("maintenance_form", clear_on_submit=True):
+            col_m1, col_m2 = st.columns(2)
+            
+            with col_m1:
+                all_devices = Device.find_all()
+                options = [d.id for d in all_devices] if all_devices else []
+                dev_id_m = st.selectbox("Betroffenes Gerät", options=options)
+                
+                m_date = st.date_input("Datum der Wartung", value=datetime.today())
+            
+            with col_m2:
+                m_cost = st.number_input("Kosten in €", min_value=0.0, step=10.0, format="%.2f")
+                m_note = st.text_area("Beschreibung der Arbeiten", placeholder="z.B. Düse getauscht, gefettet...")
+
+            submitted_m = st.form_submit_button("Wartung speichern", type="primary")
+            
+            if submitted_m:
+                if not dev_id_m:
+                    st.error("Bitte zuerst ein Gerät anlegen.")
+                else:
+                    new_maintenance = Maintenance(dev_id_m, m_date, m_cost, m_note)
+                    new_maintenance.store_data()
+                    st.success("Wartungseintrag gespeichert.")
+                    st.rerun()
+
+    st.divider()
+
+    all_maintenances = Maintenance.find_all()
+    
+    if not all_maintenances:
+        st.info("Noch keine Wartungseinträge vorhanden.")
+    else:
+
+        df_m = pd.DataFrame([
+            {
+                "Gerät": m.device_id, 
+                "Datum": m.maintenance_date, 
+                "Kosten (€)": m.cost, 
+                "Beschreibung": m.note,
+                "ID": m.id
+            } for m in all_maintenances
+        ])
+
+        tab_list, tab_cost = st.tabs(["Wartungen anzeigen", "Wartungskosten anzeigen"])
+
+        with tab_list:
+            st.dataframe(
+                df_m, 
+                use_container_width=True, 
+                hide_index=True,
+                column_config={
+                    "Datum": st.column_config.DateColumn(format="DD.MM.YYYY"),
+                    "Kosten (€)": st.column_config.NumberColumn(format="%.2f €")
+                }
+            )
+        
+            with st.container(border=True):
+                st.subheader("Eintrag löschen")
+                to_delete = st.selectbox(
+                    "Eintrag wählen", 
+                    options=df_m["ID"], 
+                    format_func=lambda x: f"{x.split('_')[0]} ({x.split('_')[2]}€)"
+                )
+                
+                if st.button("Eintrag löschen", type="secondary"):
+                    m_del = Maintenance.find_by_attribute("id", to_delete)
+                    if m_del:
+                        m_del.delete()
+                        st.success("Gelöscht.")
+                        st.rerun()
+
+        with tab_cost:
+            total = df_m["Kosten (€)"].sum()
+            st.metric("Gesamtkosten aller Wartungen", f"{total:.2f} €")
+            
+            if not df_m.empty:
+                st.bar_chart(df_m, x="Gerät", y="Kosten (€)")
