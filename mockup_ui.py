@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from devices_inheritance import Device
+from users_inheritance import User
 
 st.set_page_config(page_title="Gerätemanagement", layout="wide")
 
@@ -40,15 +41,16 @@ with tab_edit:
     # col1: Neues Gerät anlegen
     with col1:
         st.subheader("Neues Gerät anlegen")
-        with st.container(border=True): 
+        with st.container(border=True):
             with st.form("add_device_form"):
                 new_device_name = st.text_input(
                     "Gerätename", 
                     placeholder="z.B. iPhone 15 Pro Max 3000"
                 )
-                new_device_manager = st.text_input(
-                    "Geräte-Verantwortlicher (E-Mail)", 
-                    placeholder="Max.Mustermann@maexchen.com"
+                new_device_manager = st.selectbox(
+                    "Verantwortlicher Nutzer", 
+                    options=[user.id for user in User.find_all()],
+                    key="sbManager"
                 )
 
                 add_submitted = st.form_submit_button("Gerät hinzufügen", type="primary")
@@ -137,7 +139,30 @@ with tab_edit:
 with tab_user:
     st.header("Nutzer-Verwaltung")
     st.info("Diese Funktionalität wird in zukünftigen Versionen implementiert.")
+    with st.form("add_user_form"):
+        new_user = st.text_input(
+            "Nutzername", 
+                    placeholder="z.B. Max Mustermann"
+                )
+        new_id_adress = st.text_input(
+            "Nutzer-Email", 
+                    placeholder="z.B. max.mustermann@mci.edu"
+                )
 
+        add_submitted = st.form_submit_button("Nutzer hinzufügen", type="primary")
+
+        if add_submitted:
+            if not new_user or not new_id_adress:
+                st.error("Bitte alle Felder ausfüllen.")
+            else:
+                existing = User.find_by_attribute("name", new_user)
+            if existing:
+                st.error("Dieser Nutzer existiert bereits.")
+            else:
+                new_user_obj = User(new_id_adress, new_user)
+                new_user_obj.store_data()
+                st.success(f"Nutzer '{new_user}' wurde angelegt.")
+                st.rerun()
 # Fenster 4: Gerät reservieren und Warteschlange
 with tab_reserve:
     st.header("Gerät reservieren & Warteschlange")
@@ -160,7 +185,7 @@ with tab_reserve:
                     key="sb_reserve"
                 )
                 
-                device_obj = Device.find_by_attribute("device_name", selected_dev_name)
+                device_obj = Device.find_by_attribute("id", selected_dev_name)
                 
                 if not hasattr(device_obj, 'reservation_queue'):
                     device_obj.reservation_queue = []
