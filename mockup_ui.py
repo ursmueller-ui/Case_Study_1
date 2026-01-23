@@ -138,17 +138,11 @@ with tab_edit:
 # Fenster 3: Nutzer-Verwaltung
 with tab_user:
     st.header("Nutzer-Verwaltung")
-    
-    # Layout wie bei Geräteverwaltung: 2 Spalten
     col1, col2 = st.columns(2)
 
-    # ---------------------------------------------------------
-    # SPALTE 1: Neuen Nutzer anlegen
-    # ---------------------------------------------------------
     with col1:
         st.subheader("Neuen Nutzer anlegen")
         with st.container(border=True):
-            # HIER IST DIE ÄNDERUNG: clear_on_submit=True
             with st.form("add_user_form", clear_on_submit=True):
                 new_user_name = st.text_input("Nutzername", placeholder="z.B. Max Mustermann")
                 new_user_email = st.text_input("Nutzer-Email", placeholder="z.B. max.mustermann@mci.edu")
@@ -159,7 +153,7 @@ with tab_user:
                     if not new_user_name or not new_user_email:
                         st.error("Bitte alle Felder ausfüllen.")
                     else:
-                        # Prüfen, ob ID (Email) schon existiert
+                        # Prüfen, ob ID schon existiert
                         existing = User.find_by_attribute("id", new_user_email)
                         if existing:
                             st.error("Ein Nutzer mit dieser E-Mail existiert bereits.")
@@ -167,13 +161,8 @@ with tab_user:
                             new_user_obj = User(new_user_email, new_user_name)
                             new_user_obj.store_data()
                             st.success(f"Nutzer '{new_user_name}' wurde angelegt.")
-                            # st.rerun() ist hier optional, da clear_on_submit das Formular eh leert,
-                            # aber st.rerun() aktualisiert sofort die Listen in der rechten Spalte.
                             st.rerun()
 
-    # ---------------------------------------------------------
-    # SPALTE 2: Nutzer verwalten & Löschen
-    # ---------------------------------------------------------
     with col2:
         st.subheader("Nutzer verwalten")
         
@@ -191,27 +180,20 @@ with tab_user:
                     key="sb_user_manage"
                 )
 
-                # --- NEU: Verantwortlichkeiten anzeigen ---
-                # Wir suchen alle Geräte, bei denen dieser Nutzer eingetragen ist
                 all_devices = Device.find_all()
                 managed_devices = [d.id for d in all_devices if d.managed_by_user_id == selected_user_id]
                 
                 if managed_devices:
                     st.warning(f"Dieser Nutzer ist verantwortlich für: {', '.join(managed_devices)}")
 
-
                 st.divider()
 
-                # Lösch-Logik
                 st.write("**Nutzer Entfernen**")
                 
-                # Button deaktivieren oder Warnung anzeigen ist Geschmackssache. 
-                # Hier lassen wir ihn klickbar, fangen aber den Fehler ab (sicherer).
                 if st.button("Nutzer löschen", type="secondary", key="btn_del_user"):
                     if managed_devices:
                         st.error(f"Löschen nicht möglich: Der Nutzer verwaltet noch {len(managed_devices)} Gerät(e). Bitte weise diese erst wem anders zu.")
                     else:
-                        # Löschen durchführen
                         user_to_delete = User.find_by_attribute("id", selected_user_id)
                         if user_to_delete:
                             user_to_delete.delete()
@@ -228,71 +210,121 @@ with tab_user:
             st.write("Keine Daten.")
 
 
+from datetime import datetime, time
+from reservation_service import ReservationService
+from reservations import Reservation
 
-# Fenster 4: Gerät reservieren und Warteschlange
+# Fenster 4: Reservierungssystem
 with tab_reserve:
-    st.header("Gerät reservieren & Warteschlange")
-    
-    devices_in_db = [device.id for device in Device.find_all()]
-    
-    if not devices_in_db:
-        st.info("Keine Geräte vorhanden.")
-    else:
-        col_res1, col_res2 = st.columns([1, 2])
-        
-        # col1 Reservierungen eintragen
-        with col_res1:
-            with st.container(border=True):
-                st.subheader("Bedarf anmelden")
-                
-                selected_dev_name = st.selectbox(
-                    "Für welches Gerät?", 
-                    options=devices_in_db,
-                    key="sb_reserve"
-                )
-                
-                device_obj = Device.find_by_attribute("id", selected_dev_name)
-                
-                if not hasattr(device_obj, 'reservation_queue'):
-                    device_obj.reservation_queue = []
+    st.header("Reservierungssystem")
 
-                reserver_name = st.text_input("Ihr Name und Zeitdauer der Nutzung",
-                                              key="input_res_name",
-                                              placeholder="Max Mustermann 2 Tage")
-                
-                if st.button("In Warteschlange eintragen", type="primary"):
-                    if not reserver_name:
-                        st.error("Bitte einen Namen eingeben.")
-                    else:
-                        device_obj.reservation_queue.append(reserver_name)
-                        device_obj.store_data()
-                        st.success(f"{reserver_name} wurde vorgemerkt.")
-                        st.rerun()
-# GEHT NOCH NICHT ZUM SPEICHERN UND ABRUFEN DER WARTESCHLANGE
-                
-                st.divider()
-                if st.button("Nächsten Benutzer abfertigen (Löschen)"):
-                    if len(device_obj.reservation_queue) > 0:
-                        removed_user = device_obj.reservation_queue.pop(0)
-                        device_obj.store_data()
-                        st.success(f"{removed_user} wurde aus der Liste entfernt.")
-                        st.rerun()
-                    else:
-                        st.warning("Die Warteschlange ist leer.")
+    col1, col2 = st.columns([1, 2])
 
-        # col2: Warteschlange anzeigen
-        with col_res2:
-            st.subheader(f"Warteschlange für: {selected_dev_name}")
-            
-            queue = device_obj.reservation_queue
-            
-            if not queue:
-                st.info("Aktuell keine Reservierungen.")
+    with col1:
+        st.subheader("Neue Reservierung")
+        with st.container(border=True):
+
+            users = User.find_all()
+            devices = Device.find_all()
+
+            if not users or not devices:
+                st.error("Bitte zuerst Nutzer und Geräte anlegen!")
             else:
-                # Schöne Darstellung als nummerierte Liste
-                st.write("Folgende Personen warten (Reihenfolge):")
-                for i, person in enumerate(queue, 1):
-                    st.markdown(f"**{i}. {person}**")
+                with st.form("new_reservation_form", clear_on_submit=True):
+
+                    user_id = st.selectbox(
+                        "Nutzer",
+                        options=[u.id for u in users],
+                        format_func=lambda x: next((f"{u.name}" for u in users if u.id == x), x)
+                    )
+                    
+                    device_id = st.selectbox(
+                        "Gerät",
+                        options=[d.id for d in devices]
+                    )
+
+                    st.write("**Zeitraum wählen:**")
+
+                    c_start_d, c_start_t = st.columns(2)
+                    start_d = c_start_d.date_input("Start-Datum", value=datetime.today())
+                    start_t = c_start_t.time_input("Start-Zeit", value=time(9, 0))
+
+                    c_end_d, c_end_t = st.columns(2)
+                    end_d = c_end_d.date_input("End-Datum", value=datetime.today())
+                    end_t = c_end_t.time_input("End-Zeit", value=time(17, 0))
+
+                    submitted = st.form_submit_button("Reservieren", type="primary")
+
+                    if submitted:
+                        start_dt = datetime.combine(start_d, start_t)
+                        end_dt = datetime.combine(end_d, end_t)
+
+                        if start_dt >= end_dt:
+                            st.error("Fehler: Das Ende muss nach dem Start liegen.")
+                        else:
+                            try:
+                                ReservationService.create_reservation(user_id, device_id, start_dt, end_dt)
+                                st.success(f"Reservierung für {device_id} erfolgreich!")
+                                st.rerun()
+                            except ValueError as e:
+                                st.error(f"Nicht möglich: {e}")
+
+    with col2:
+        st.subheader("Aktuelle Reservierungen")
+        
+        srv = ReservationService() 
+        all_reservations = srv.find_all_reservations()
+
+        if not all_reservations:
+            st.info("Aktuell keine Reservierungen vorhanden.")
+        else:
+            res_data = []
+            for r in all_reservations:
+                u_name = next((u.name for u in users if u.id == r.user_id), r.user_id)
+                res_data.append({
+                    "Gerät": r.device_id,
+                    "Nutzer": u_name,
+                    "Von": r.start_date,
+                    "Bis": r.end_date,
+                    "ID": r.id
+                })
+            
+            df_res = pd.DataFrame(res_data)
+            st.dataframe(
+                df_res, 
+                use_container_width=True, 
+                hide_index=True,
+                column_config={
+                    "Von": st.column_config.DatetimeColumn(format="D.M.Y HH:mm"),
+                    "Bis": st.column_config.DatetimeColumn(format="D.M.Y HH:mm"),
+                }
+            )
+
+            st.divider()
+            st.write("**Reservierung stornieren**")
+            
+            col_del_sel, col_del_btn = st.columns([3, 1])
+            
+            with col_del_sel:
+                delete_options = {r.id: f"{r.device_id} | {r.user_id} | {r.start_date}" for r in all_reservations}
+                
+                selected_res_id = st.selectbox(
+                    "Welche Reservierung entfernen?",
+                    options=list(delete_options.keys()),
+                    format_func=lambda x: delete_options[x],
+                    label_visibility="collapsed"
+                )
+
+            with col_del_btn:
+                if st.button("Stornieren", type="secondary"):
+                    res_to_delete = Reservation.find_by_attribute("id", selected_res_id)
+                    if res_to_delete:
+                        res_to_delete.delete()
+                        st.success("Gelöscht.")
+                        st.rerun()
+                    else:
+                        st.error("Fehler: Reservierung nicht gefunden.")
+
 
 # Fenster 5: Wartungssystem
 with tab_maintenance:
